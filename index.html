@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chemistry Kinetics Simulator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* --- Chemistry-Themed CSS (Light Mode) --- */
+    :root {
+      --bg-light: #ffffff;
+      --bg-medium: #f7fafc;
+      --bg-dark: #e2e8f0;
+      --text-primary: #2d3748;
+      --text-secondary: #4a5568;
+      --accent-blue: #3182ce;
+      --accent-red: #e53e3e;
+      --accent-green: #38a169;
+      --accent-orange: #dd6b20;
+      --accent-yellow: #d69e2e;
+      --shadow-light: rgba(0, 0, 0, 0.05);
+      --shadow-dark: rgba(0, 0, 0, 0.1);
+      --border-radius: 8px;
+      --border-radius-sm: 6px;
+    }
+
+    @keyframes subtleGradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(49, 130, 206, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(49, 130, 206, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(49, 130, 206, 0); }
+    }
+
+    @keyframes titleGlow {
+      0%, 100% { text-shadow: 0 0 4px var(--accent-blue), 0 0 8px rgba(49, 130, 206, 0.5); }
+      50% { text-shadow: 0 0 6px var(--accent-blue), 0 0 12px rgba(49, 130, 206, 0.5); }
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background: linear-gradient(-45deg, #edf2f7, #ffffff, #e2e8f0, #f7fafc);
+      background-size: 400% 400%;
+      animation: subtleGradient 20s ease infinite;
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      box-sizing: border-box;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .header h1 {
+      margin: 0 0 5px 0;
+      font-size: 2.2em;
+      font-weight: 700;
+      color: var(--text-primary);
+      /* animation: titleGlow 3s ease-in-out infinite; */
+    }
+
+    .header .subtitle {
+      color: var(--text-secondary);
+      font-size: 1em;
+      margin: 0 0 10px 0;
+    }
+
+    .start-button {
+      background-color: var(--accent-green);
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--border-radius-sm);
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      animation: pulse 2s infinite;
+      
+    }
+
+    .start-button:hover {
+      background-color: #2f855a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(56, 161, 105, 0.3);
+    }
+
+    .control-panels {
+      /* display: grid; */
+      /* grid-template-columns: 1fr 1fr 2fr; */
+      display:flex;
+      gap: 15px;
+      margin-bottom: 2rem;
+      width: 100%;
+      margin-top: 15px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .control-panel {
+      background: var(--bg-light);
+      border: 1px solid var(--bg-dark);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: 0 3px 6px var(--shadow-dark);
+      transition: all 0.3s ease;
+    }
+
+    .initial-conditions-panel {
+      background: var(--bg-light);
+      border: 1px solid var(--bg-dark);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      box-shadow: 0 3px 6px var(--shadow-dark);
+      transition: all 0.3s ease;
+      /* width: 100%; */
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .initial-conditions-panel:hover {
+      box-shadow: 0 5px 15px var(--shadow-dark);
+      /* transform: translateY(-2px); */
+    }
+
+    .control-panel:hover {
+      box-shadow: 0 5px 15px var(--shadow-dark);
+      /* transform: translateY(-2px); */
+    }
+
+    .panel-title {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 2px solid var(--accent-blue);
+    }
+
+    .form-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-weight: 500;
+      color: var(--text-secondary);
+      min-width: 60px;
+    }
+
+    .form-group input,
+    .form-group select {
+      padding: 6px 10px;
+      border: 1px solid var(--bg-dark);
+      border-radius: var(--border-radius-sm);
+      background: var(--bg-light);
+      color: var(--text-primary);
+      font-size: 0.9em;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: var(--border-radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9em;
+    }
+
+    .btn-primary {
+      background-color: var(--accent-blue);
+      color: white;
+    }
+
+    .btn-success {
+      background-color: var(--accent-green);
+      color: white;
+    }
+
+    .btn-warning {
+      background-color: var(--accent-orange);
+      color: white;
+    }
+
+    .btn-danger {
+      background-color: var(--accent-red);
+      color: white;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .temp-display {
+      background: var(--bg-light);
+      padding: 6px 10px;
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--bg-dark);
+      color: var(--accent-orange);
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+
+    .color-picker {
+      width: 35px;
+      height: 35px;
+      border: none;
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    
+    #reactionChart {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-color: #fff;
+      cursor: default;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }   
+
+    .simulation-area {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+
+    .simulation-container,
+    .graph-container {
+      background: var(--bg-light);
+      border-radius: var(--border-radius);
+      padding: 0;
+      /* box-shadow: 0 3px 6px var(--shadow-dark); */
+      height: 350px;
+      overflow: hidden;
+      position: relative;
+      width: 100%;
+    }
+
+    #simulationCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-color: #fff;
+      cursor: default;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }   
+
+    .simulation-container h2,
+    .graph-container h2 {
+      margin-top: 0;
+      color: var(--text-primary);
+      font-size: 1.2em;
+      font-weight: 600;
+      padding: 8px;
+      text-align: center;
+      width: 100%;
+      display: block;
+    }
+
+    .reaction-steps-header h2 {
+      font-size: 1.3em;
+      font-weight: 600;
+      color: var(--text-primary);
+
+      border-bottom: 2px solid var(--accent-blue);
+    }
+
+    .reaction-steps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      /* margin-bottom: 10px; */
+    }
+
+    .reaction-steps-container {
+      background: var(--bg-light);
+      border: 1px solid var(--bg-dark);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      margin-bottom: 15px;
+      padding-top: 0px;
+      margin-top: 2rem;
+    }
+
+    .reaction-step {
+      background: var(--bg-medium);
+      border: 1px solid var(--bg-dark);
+      border-radius: var(--border-radius-sm);
+      padding: 12px;
+      margin-bottom: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .reaction-step:hover {
+      box-shadow: 0 2px 8px var(--shadow-dark);
+      transform: translateY(-1px);
+    }
+
+    .remove-step-btn {
+      background: var(--accent-red);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      cursor: pointer;
+      font-size: 1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .remove-step-btn:hover {
+      background: #c53030;
+      transform: scale(1.1);
+    }
+
+    .reaction-step select,
+    .reaction-step input {
+      padding: 5px 8px;
+      border: 1px solid var(--bg-dark);
+      border-radius: var(--border-radius-sm);
+      background: var(--bg-light);
+      color: var(--text-primary);
+      font-size: 0.85em;
+    }
+
+    .reaction-step input[type="range"] {
+      width: 80px;
+      height: 5px;
+      background: var(--bg-dark);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .reaction-step input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      background: var(--accent-blue);
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid var(--bg-light);
+    }
+
+    .reaction-step input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      background: var(--accent-blue);
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid var(--bg-light);
+    }
+
+    .status-bar {
+      background: var(--bg-light);
+      /* border: 1px solid var(--bg-dark); */
+      border-radius: var(--border-radius-sm);
+      padding: 8px 15px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.9em;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .simulation-area {
+        grid-template-columns: 1fr;
+      }
+      
+      .control-panels {
+        grid-template-columns: 1fr;
+       
+      }
+      
+      .reaction-step {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      
+      .btn-group {
+        flex-direction: column;
+      }
+    }
+
+    .step-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .step-reaction {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-wrap: wrap;
+      justify-content: right;
+    }
+
+    /* Reduce width of input fields in reaction steps */
+    .reaction-step input[type="number"] {
+      width: 45px;
+    }
+
+    .reaction-step select {
+      width: auto;
+    }
+
+
+    .seperating-line {
+      width: 100%;
+      height: 1px;
+      background-color: var(--bg-dark);
+      margin: 10px 0;
+    }
+
+    .customzation-panels .control-panel {
+      flex: 1;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Chemistry Kinetics Simulator</h1>
+    </div>
+
+    <!-- Init Panel and Start Button (Above Simulation) -->
+    <div class="initial-conditions-panel">
+      <div class="panel-title">Initial Conditions</div>
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+          <div class="form-group">
+            <label for="initialA">Initial A:</label>
+            <input type="number" id="initialA" value="200" min="0">
+          </div>
+          <div class="form-group">
+            <label for="initialB">Initial B:</label>
+            <input type="number" id="initialB" value="230" min="0">
+          </div>
+          <div class="form-group">
+            <label for="initialC">Initial C:</label>
+            <input type="number" id="initialC" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label for="initialD">Initial D:</label>
+            <input type="number" id="initialD" value="0" min="0">
+          </div>
+        </div>
+        <button id="startBtn" class="btn btn-success start-button">Start / Restart</button>
+      </div>
+    </div>
+
+    <!-- Simulation Area -->
+    <div class="simulation-area">
+      <div class="simulation-container">
+        <h2 style="position: absolute; z-index: 10;">Simulation Area</h2>
+        <canvas id="simulationCanvas"></canvas>
+      </div>
+      <div class="graph-container">
+        <h2>Concentration vs. Time</h2>
+        <canvas id="reactionChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="status">Status: Idle | Steps: 0 | A: 0 | B: 0 | C: 0 | D: 0 | Time: 0.0s</div>
+
+    <!-- Heat, Volume, and Particle Management (Below Simulation) -->
+    <div class="control-panels ">
+      <div class="control-panel">
+        <div class="panel-title">Temperature Control</div>
+        <div class="btn-group" style="display: flex; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1;">
+            <button id="addHeatBtn" class="btn btn-warning">Add Heat</button>
+            <button id="removeHeatBtn" class="btn btn-warning">Remove Heat</button>
+          </div>
+          <div class="temp-display" id="avgKETempDisplay">Temperature: 0.00 K</div>
+        </div>
+      </div>
+
+      <div class="control-panel">
+        <div class="panel-title">Volume Control</div>
+        <div class="btn-group">
+          <button id="decreaseVolBtn" class="btn btn-primary">– Volume</button>
+          <button id="increaseVolBtn" class="btn btn-primary">+ Volume</button>
+        </div>
+      </div>
+
+      
+
+      <div class="control-panel" style="flex: 1;">
+        <div class="panel-title">Add or Remove Particles</div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="form-group" 
+              <label for="prtAction">Action:</label>
+              <select id="prtAction" style="width: 80px;">
+                <option value="add">Add</option>
+                <option value="remove">Remove</option>
+              </select>
+            </div>
+            <div class="form-group" >
+              <label for="prtType">Type:</label>
+              <select id="prtType" style="width: 60px;">
+                <option>A</option>
+                <option>B</option>
+                <option>C</option>
+                <option>D</option>
+              </select>
+            </div>
+            <div class="form-group" >
+              <label for="prtCount">Count:</label>
+              <input type="number" id="prtCount" min="1" value="50" style="width: 60px;">
+            </div>
+          </div>
+          <button id="prtApplyBtn" class="btn btn-primary">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    
+      <!-- small seperating line -->
+      <div class="seperating-line"></div>
+
+    <!-- Adding New Steps (Below Heat/Volume/Particle Controls) -->
+    <div class="reaction-steps-container">
+      <div class="reaction-steps-header">
+        <h2>Elementary Reaction Steps</h2>
+        <button id="addStepBtn" class="btn btn-success">+ Add Reaction Step</button>
+      </div>
+      <div id="reactionStepsContainer"></div>
+    </div>
+
+    <!-- Particle Customization (Below Adding New Steps) -->
+    <div class="control-panels customzation-panels">
+      <div class="control-panel">
+        <div class="panel-title">Particle A Customization</div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="colorA">Color:</label>
+            <input type="color" id="colorA" value="#3498db" class="color-picker">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="radiusA">Radius:</label>
+            <input type="number" id="radiusA" value="4" min="1" max="20" style="width: 60px;">
+          </div>
+        </div>
+      </div>
+      <div class="control-panel">
+        <div class="panel-title">Particle B Customization</div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="colorB">Color:</label>
+            <input type="color" id="colorB" value="#e74c3c" class="color-picker">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="radiusB">Radius:</label>
+            <input type="number" id="radiusB" value="4" min="1" max="20" style="width: 60px;">
+          </div>
+        </div>
+      </div>
+      <div class="control-panel">
+        <div class="panel-title">Particle C Customization</div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="colorC">Color:</label>
+            <input type="color" id="colorC" value="#2ecc71" class="color-picker">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="radiusC">Radius:</label>
+            <input type="number" id="radiusC" value="5" min="1" max="20" style="width: 60px;">
+          </div>
+        </div>
+      </div>
+      <div class="control-panel">
+        <div class="panel-title">Particle D Customization</div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="colorD">Color:</label>
+            <input type="color" id="colorD" value="#FFD700" class="color-picker">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="radiusD">Radius:</label>
+            <input type="number" id="radiusD" value="6" min="1" max="20" style="width: 60px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+  </div>
+
+  <script>
+    // --- Canvas, Context, Controls ---
+    const simCanvas = document.getElementById('simulationCanvas');
+    const simContainer = document.querySelector('.simulation-area');
+    const simContainerInner = document.querySelector('.simulation-container');
+    const simCtx = simCanvas.getContext('2d');
+    const chartCanvas = document.getElementById('reactionChart');
+    const chartCtx = chartCanvas.getContext('2d');
+    const initialAInput = document.getElementById('initialA');
+    const initialBInput = document.getElementById('initialB');
+    const initialCInput = document.getElementById('initialC');
+    const initialDInput = document.getElementById('initialD');
+    const startBtn = document.getElementById('startBtn');
+    const addStepBtn = document.getElementById('addStepBtn');
+    const reactionStepsContainer = document.getElementById('reactionStepsContainer');
+    const statusDiv = document.getElementById('status');
+    const addHeatBtn = document.getElementById('addHeatBtn');
+    const removeHeatBtn = document.getElementById('removeHeatBtn');
+    const avgKETempDisplay = document.getElementById('avgKETempDisplay');
+    // const energyFactorSlider = document.getElementById('energyFactorSlider');
+    const energyFactorValue = 1 //document.getElementById('energyFactorValue');
+    const colorAInput = document.getElementById('colorA');
+    const radiusAInput = document.getElementById('radiusA');
+    const colorBInput = document.getElementById('colorB');
+    const radiusBInput = document.getElementById('radiusB');
+    const colorCInput = document.getElementById('colorC');
+    const radiusCInput = document.getElementById('radiusC');
+    const colorDInput = document.getElementById('colorD');
+    const radiusDInput = document.getElementById('radiusD');
+
+    // THERMOSTAT: target average KE (new)
+    let targetAvgKE = 0;
+
+
+    // --- Simulation & Graphing State ---
+    let particles = [];
+    let reactionSteps = [];
+    let animationFrameId;
+    let simulationTime = 0;
+    let lastFrameTime = 0;
+    let timeSinceLastGraphUpdate = 0;
+    const graphUpdateInterval = 0.2;
+    let simulationRunning = false;
+    let reactionChart;
+    let timeData = [], countAData = [], countBData = [], countCData = [], countDData = [];
+    const HEAT_ADJUST_FACTOR = 0.1;
+    const MIN_SPEED_SQ = 0.0025;
+    let collisionEnergyFactor = 1.0;
+
+    // --- Particle Definitions (D is now included) ---
+    const particleTypes = {
+      A: { color: '#3498db', radius: 4, massFactor: 3 },
+      B: { color: '#e74c3c', radius: 4, massFactor: 3 },
+      C: { color: '#2ecc71', radius: 5, massFactor: 3 },
+      D: { color: '#FFD700', radius: 6, massFactor: 3  } // Default custom particle
+    };
+    const particleTypeNames = Object.keys(particleTypes);
+
+    const VOL_STEP = 0.1;  // 10% per click
+
+    function changeVolume(factor) {
+      console.log('changeVolume called with factor:', factor);
+      
+      // Prevent automatic calls or excessive expansion
+      if (Math.abs(factor) < 0.01) {
+        console.log('Ignoring very small volume change');
+        return;
+      }
+      
+      // 1) Compute new container size
+      const cw = simContainerInner.clientWidth;
+      const ch = simContainerInner.clientHeight;
+      const newW = cw * (1 + factor);
+      const newH = ch * (1 + factor);
+
+      // Add limits to prevent infinite expansion
+      const maxWidth = 100000;
+      const maxHeight = 100000;
+      const minWidth = 0;
+      const minHeight = 0;
+
+      // 2) Resize the container & canvas with limits
+      const finalW = Math.max(minWidth, Math.min(maxWidth, newW));
+      const finalH = Math.max(minHeight, Math.min(maxHeight, newH));
+      
+      simContainerInner.style.width = `${finalW}px`;
+      simContainerInner.style.height = `${finalH}px`;
+      simCanvas.width = simContainerInner.clientWidth;
+      simCanvas.height = simContainerInner.clientHeight;
+
+      // 3) Scale all particle positions so they stay “inside”
+      const scaleFactor = Math.min(finalW / cw, finalH / ch);
+      particles.forEach(p => {
+        p.x *= scaleFactor;
+        p.y *= scaleFactor;
+      });
+    }
+
+
+    // Rescales every frame so ⟨KE⟩ → targetAvgKE
+    function enforceKE() {
+      const currentKE = calculateAverageKE();
+      if (currentKE > 1e-9 && targetAvgKE > 0) {
+        const scale = Math.sqrt(targetAvgKE / currentKE);
+        particles.forEach(p => {
+          p.vx *= scale;
+          p.vy *= scale;
+        });
+      }
+    }
+
+
+    function updateParticleProperties() {
+      // Update particle A properties
+      particleTypes.A.color = colorAInput.value;
+      particleTypes.A.radius = parseFloat(radiusAInput.value) || particleTypes.A.radius;
+      particleTypes.A.radius = Math.max(1, particleTypes.A.radius); // Ensure min radius 1
+
+      // Update particle B properties
+      particleTypes.B.color = colorBInput.value;
+      particleTypes.B.radius = parseFloat(radiusBInput.value) || particleTypes.B.radius;
+      particleTypes.B.radius = Math.max(1, particleTypes.B.radius); // Ensure min radius 1
+
+      // Update particle C properties
+      particleTypes.C.color = colorCInput.value;
+      particleTypes.C.radius = parseFloat(radiusCInput.value) || particleTypes.C.radius;
+      particleTypes.C.radius = Math.max(1, particleTypes.C.radius); // Ensure min radius 1
+
+      // Update particle D properties
+      particleTypes.D.color = colorDInput.value;
+      particleTypes.D.radius = parseFloat(radiusDInput.value) || particleTypes.D.radius;
+      particleTypes.D.radius = Math.max(1, particleTypes.D.radius); // Ensure min radius 1
+
+      // Update mass for all particle types
+      for (const type of particleTypeNames) {
+        const props = particleTypes[type];
+        props.mass = props.massFactor * Math.PI * props.radius;
+      }
+      console.log("Updated Particle Types:", particleTypes);
+      
+      // Update chart colors if chart exists
+      if (reactionChart) {
+        if (reactionChart.data.datasets[0]) {
+          reactionChart.data.datasets[0].borderColor = particleTypes.A.color;
+          reactionChart.data.datasets[0].backgroundColor = hexToRgba(particleTypes.A.color, 0.1);
+        }
+        if (reactionChart.data.datasets[1]) {
+          reactionChart.data.datasets[1].borderColor = particleTypes.B.color;
+          reactionChart.data.datasets[1].backgroundColor = hexToRgba(particleTypes.B.color, 0.1);
+        }
+        if (reactionChart.data.datasets[2]) {
+          reactionChart.data.datasets[2].borderColor = particleTypes.C.color;
+          reactionChart.data.datasets[2].backgroundColor = hexToRgba(particleTypes.C.color, 0.1);
+        }
+        if (reactionChart.data.datasets[3]) {
+          reactionChart.data.datasets[3].borderColor = particleTypes.D.color;
+          reactionChart.data.datasets[3].backgroundColor = hexToRgba(particleTypes.D.color, 0.1);
+        }
+        reactionChart.update('none');
+      }
+    }
+
+    function hexToRgba(hex, alpha = 1) {
+      let r = 0, g = 0, b = 0;
+      if (hex.length == 4) { r = parseInt(hex[1] + hex[1], 16); g = parseInt(hex[2] + hex[2], 16); b = parseInt(hex[3] + hex[3], 16); }
+      else if (hex.length == 7) { r = parseInt(hex[1] + hex[2], 16); g = parseInt(hex[3] + hex[4], 16); b = parseInt(hex[5] + hex[6], 16); }
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    function getRandom(min, max) { return Math.random() * (max - min) + min; }
+
+    // --- Particle Class ---
+    class Particle {
+      constructor(type, x, y, vx, vy) {
+        this.type = type;
+        const props = particleTypes[type];
+        this.radius = props.radius;
+        this.color = props.color;
+        this.mass = props.mass;
+        this.x = x !== undefined ? x : getRandom(this.radius, simCanvas.width - this.radius);
+        this.y = y !== undefined ? y : getRandom(this.radius, simCanvas.height - this.radius);
+        if (vx !== undefined && vy !== undefined) {
+          this.vx = vx;
+          this.vy = vy;
+        } else {
+          const angle = getRandom(0, Math.PI * 2);
+          const speed = getRandom(1, 3.2);
+          this.vx = Math.cos(angle) * speed;
+          this.vy = Math.sin(angle) * speed;
+        }
+        this.collidedThisFrame = false;
+        this.reactedThisFrame = false;
+        this.decomposedThisFrame = false;
+      }
+      draw() {
+        simCtx.beginPath();
+        simCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        simCtx.fillStyle = this.color;
+        simCtx.fill();
+        simCtx.closePath();
+      }
+      update(dt) {
+        this.collidedThisFrame = false;
+        this.reactedThisFrame = false;
+        this.decomposedThisFrame = false;
+        let effectiveVx = this.vx;
+        let effectiveVy = this.vy;
+        this.x += effectiveVx;
+        this.y += effectiveVy;
+        let collidedWall = false;
+        if (this.x + this.radius > simCanvas.width) {
+          this.vx = -Math.abs(this.vx);
+          this.x = simCanvas.width - this.radius;
+          collidedWall = true;
+        } else if (this.x - this.radius < 0) {
+          this.vx = Math.abs(this.vx);
+          this.x = this.radius;
+          collidedWall = true;
+        }
+        if (this.y + this.radius > simCanvas.height) {
+          this.vy = -Math.abs(this.vy);
+          this.y = simCanvas.height - this.radius;
+          collidedWall = true;
+        } else if (this.y - this.radius < 0) {
+          this.vy = Math.abs(this.vy);
+          this.y = this.radius;
+          collidedWall = true;
+        }
+        if (collidedWall) this.collidedThisFrame = true;
+      }
+      getKE() {
+        return 0.5 * this.mass * (this.vx * this.vx + this.vy * this.vy);
+      }
+    }
+
+    // --- Collision & Velocity Calculation Helpers ---
+    function calculateElasticVelocities(p1, p2) { const dx = p2.x - p1.x; const dy = p2.y - p1.y; const distSq = dx * dx + dy * dy; if (distSq === 0) return { v1x_f: p1.vx, v1y_f: p1.vy, v2x_f: p2.vx, v2y_f: p2.vy }; const dist = Math.sqrt(distSq); const nx = dx / dist; const ny = dy / dist; const v1n = p1.vx * nx + p1.vy * ny; const v2n = p2.vx * nx + p2.vy * ny; const v1t = p1.vx * (-ny) + p1.vy * nx; const v2t = p2.vx * (-ny) + p2.vy * nx; const m1 = p1.mass; const m2 = p2.mass; const totalMass = m1 + m2; if (totalMass < 1e-9) return { v1x_f: p1.vx, v1y_f: p1.vy, v2x_f: p2.vx, v2y_f: p2.vy }; const v1n_final = ((m1 - m2) * v1n + 2 * m2 * v2n) / totalMass; const v2n_final = ((m2 - m1) * v2n + 2 * m1 * v1n) / totalMass; const v1x_f = v1n_final * nx - v1t * ny; const v1y_f = v1n_final * ny + v1t * nx; const v2x_f = v2n_final * nx - v2t * ny; const v2y_f = v2n_final * ny + v2t * nx; return { v1x_f, v1y_f, v2x_f, v2y_f }; }
+    function resolveCollision(p1, p2) { const dx = p2.x - p1.x; const dy = p2.y - p1.y; const distSq = dx * dx + dy * dy; const minDist = p1.radius + p2.radius; if (distSq < 1e-9 || distSq >= minDist * minDist) return false; const dist = Math.sqrt(distSq); const overlap = minDist - dist; const nx = dx / dist; const ny = dy / dist; const totalMass = p1.mass + p2.mass; if (totalMass < 1e-9) return false; const sepFactor = 0.51 * overlap; const p1SepX = nx * (p2.mass / totalMass) * sepFactor * 2; const p1SepY = ny * (p2.mass / totalMass) * sepFactor * 2; const p2SepX = nx * (p1.mass / totalMass) * sepFactor * 2; const p2SepY = ny * (p1.mass / totalMass) * sepFactor * 2; p1.x -= p1SepX; p1.y -= p1SepY; p2.x += p2SepX; p2.y += p2SepY; const { v1x_f, v1y_f, v2x_f, v2y_f } = calculateElasticVelocities(p1, p2); p1.vx = v1x_f; p1.vy = v1y_f; p2.vx = v2x_f; p2.vy = v2y_f; p1.collidedThisFrame = true; p2.collidedThisFrame = true; return true; }
+
+    // --- Temperature / Energy Functions ---
+    function calculateAverageKE() { if (particles.length === 0) return 0; let totalKE = 0; particles.forEach(p => { totalKE += p.getKE(); }); return totalKE / particles.length; }
+    function adjustHeat(factor) { const energyScaleFactor = 1 + factor; if (energyScaleFactor <= 0) return; const velocityScale = Math.sqrt(energyScaleFactor); particles.forEach(p => { const currentSpeedSq = p.vx * p.vx + p.vy * p.vy; if (factor < 0 && currentSpeedSq * energyScaleFactor < MIN_SPEED_SQ) { const angle = Math.random() * 2 * Math.PI; const minSpeed = Math.sqrt(MIN_SPEED_SQ); p.vx = Math.cos(angle) * minSpeed; p.vy = Math.sin(angle) * minSpeed; } else { p.vx *= velocityScale; p.vy *= velocityScale; } }); updateStatusDisplay(); }
+
+    // --- Reaction Step Management ---
+    // --- Reaction Step Management (Updated createReactionStepElement for Grid Alignment) ---
+    function createReactionStepElement(step) {
+      const div = document.createElement('div');
+      div.className = 'reaction-step';
+
+      // ── col 1: controls ──
+      const controls = document.createElement('span');
+      controls.className = 'step-controls';
+
+      // x (remove) button
+      const removeBtn = document.createElement('button');
+      removeBtn.textContent = 'x';
+      removeBtn.className = 'remove-step-btn';
+      removeBtn.onclick = () => removeReactionStep(step.id);
+      controls.appendChild(removeBtn);
+
+      // uni/bimolecular dropdown
+      const typeSelect = document.createElement('select');
+      ['bimolecular', 'unimolecular'].forEach(rt => {
+        const o = document.createElement('option');
+        o.value = rt; o.text = rt.charAt(0).toUpperCase() + rt.slice(1);
+        if (rt === step.reactionType) o.selected = true;
+        typeSelect.appendChild(o);
+      });
+      typeSelect.addEventListener('change', e => {
+        updateReactionStep(step.id, 'reactionType', e.target.value);
+        renderReactionStepsUI();
+      });
+      controls.appendChild(typeSelect);
+
+      // probability slider + label
+      const probSlider = document.createElement('input');
+      probSlider.type = 'range'; probSlider.min = 0; probSlider.max = 100; probSlider.value = step.probability * 100;
+      const probLabel = document.createElement('span');
+      probLabel.textContent = `${probSlider.value}%`;
+      probSlider.addEventListener('input', e => {
+        probLabel.textContent = e.target.value + '%';
+        updateReactionStep(step.id, 'probability', e.target.value / 100);
+      });
+      controls.appendChild(probSlider);
+      controls.appendChild(probLabel);
+
+      // Ea input + label
+      const eaLabel = document.createElement('label'); eaLabel.textContent = 'Ea:';
+      const eaInput = document.createElement('input');
+      eaInput.type = 'number'; eaInput.value = step.activationEnergy;
+      eaInput.addEventListener('input', e => updateReactionStep(step.id, 'activationEnergy', parseFloat(e.target.value) || 0));
+      controls.appendChild(eaLabel);
+      controls.appendChild(eaInput);
+
+      // ── col 2: reaction ──
+      const reaction = document.createElement('span');
+      reaction.className = 'step-reaction';
+
+      // Reactant 1
+      const r1 = document.createElement('select');
+      particleTypeNames.forEach(t => {
+        const o = document.createElement('option'); o.value = t; o.text = t;
+        if (t === step.reactant1) o.selected = true;
+        r1.appendChild(o);
+      });
+      r1.addEventListener('change', e => updateReactionStep(step.id, 'reactant1', e.target.value));
+      reaction.appendChild(r1);
+
+      // if bimolecular, add “+ Reactant 2”
+      if (step.reactionType === 'bimolecular') {
+        const plus = document.createElement('span'); plus.textContent = ' + ';
+        const r2 = document.createElement('select');
+        particleTypeNames.forEach(t => {
+          const o = document.createElement('option'); o.value = t; o.text = t;
+          if (t === step.reactant2) o.selected = true;
+          r2.appendChild(o);
+        });
+        r2.addEventListener('change', e => updateReactionStep(step.id, 'reactant2', e.target.value));
+        reaction.appendChild(plus);
+        reaction.appendChild(r2);
+      }
+
+      // arrow
+      const arrow = document.createElement('span');
+      arrow.innerHTML = ' &rarr; ';
+      reaction.appendChild(arrow);
+
+      // products
+      step.products.forEach((prod, i) => {
+        const coeff = document.createElement('input');
+        coeff.type = 'number'; coeff.value = prod.coeff; coeff.min = 0;
+        coeff.addEventListener('input', e => updateReactionProduct(step.id, i, 'coeff', parseInt(e.target.value) || 0));
+        const sel = document.createElement('select');
+        particleTypeNames.forEach(t => {
+          const o = document.createElement('option'); o.value = t; o.text = t;
+          if (t === prod.type) o.selected = true;
+          sel.appendChild(o);
+        });
+        sel.addEventListener('change', e => updateReactionProduct(step.id, i, 'type', e.target.value));
+        if (i > 0) {
+          const plusP = document.createElement('span'); plusP.textContent = ' + ';
+          reaction.appendChild(plusP);
+        }
+        reaction.appendChild(coeff);
+        reaction.appendChild(sel);
+      });
+
+      // Active toggle
+      const toggle = document.createElement('input');
+      toggle.type = 'checkbox';
+      toggle.checked = step.active;
+      toggle.title = 'Enable / disable this reaction';
+      toggle.addEventListener('change', e => {
+        updateReactionStep(step.id, 'active', e.target.checked);
+        renderReactionStepsUI();
+      });
+      reaction.appendChild(toggle);
+
+      // put them in the grid
+      div.appendChild(controls);
+      div.appendChild(reaction);
+      return div;
+    }
+    function renderReactionStepsUI() {
+        reactionStepsContainer.innerHTML = '';
+        reactionSteps.forEach(step => {
+            reactionStepsContainer.appendChild(createReactionStepElement(step));
+        });
+        updateStatusDisplay();
+    }
+
+    function addReactionStep() {
+        const newStep = {
+            id: Date.now(),
+            active: true,
+            reactionType: 'bimolecular',
+            reactant1: 'A',
+            reactant2: 'B',
+            products: [{
+                type: 'C',
+                coeff: 1
+            }, {
+                type: 'D',
+                coeff: 0
+            }],
+            activationEnergy: 50,
+            probability: 0.20
+        };
+        reactionSteps.push(newStep);
+        renderReactionStepsUI();
+    }
+
+    function removeReactionStep(id) {
+        reactionSteps = reactionSteps.filter(step => step.id !== id);
+        renderReactionStepsUI();
+    }
+
+    function updateReactionStep(id, field, value) {
+        const step = reactionSteps.find(s => s.id === id);
+        if (step) {
+            step[field] = value;
+            console.log("Updated step:", id, field, value);
+        }
+    }
+
+    function updateReactionProduct(stepId, productIndex, field, value) {
+        const step = reactionSteps.find(s => s.id === stepId);
+        if (!step) return;
+        if (!step.products) step.products = []; /*Initialize if needed*/
+        if (!step.products[productIndex]) step.products[productIndex] = {
+            type: particleTypeNames[0],
+            coeff: 0
+        }; /*Initialize product slot*/
+        if (field === 'coeff') {
+            step.products[productIndex][field] = Math.max(0, parseInt(value) || 0);
+        } else {
+            step.products[productIndex][field] = value;
+        }
+        console.log("Updated product:", stepId, productIndex, field, value);
+    }
+
+    // --- Simulation Loop ---
+    function gameLoop(currentTime) {
+      if (!simulationRunning) return;
+      const dt = (currentTime - lastFrameTime) / 1000.0; lastFrameTime = currentTime; simulationTime += dt; timeSinceLastGraphUpdate += dt;
+
+      particles.forEach(p => p.update(dt)); // Update positions & reset flags
+
+      let particlesToRemove = new Set();
+      let particlesToAdd = [];
+
+      // --- 2. Bimolecular Collision / Reaction Loop ---
+      for (let i = 0; i < particles.length; i++) {
+        if (particlesToRemove.has(i)) continue;
+        const p1 = particles[i];
+        if (p1.reactedThisFrame || p1.decomposedThisFrame) continue;
+
+        for (let j = i + 1; j < particles.length; j++) {
+          if (particlesToRemove.has(j)) continue;
+          const p2 = particles[j];
+          if (p2.reactedThisFrame || p2.decomposedThisFrame) continue;
+
+          const dx = p2.x - p1.x; const dy = p2.y - p1.y; const distSq = dx * dx + dy * dy;
+          const minDist = p1.radius + p2.radius;
+
+          if (distSq < minDist * minDist && distSq > 1e-9) { // Collision
+            let reactionOccurred = false;
+            const dist = Math.sqrt(distSq); const nx = dx / dist; const ny = dy / dist;
+            const v1n = p1.vx * nx + p1.vy * ny; const v2n = p2.vx * nx + p2.vy * ny;
+            const v_rel_n = v1n - v2n;
+
+            if (true || v_rel_n < -0.01) { // Approaching check
+              const mu = (p1.mass * p2.mass) / (p1.mass + p2.mass + 1e-9);
+              const collisionKE = 5 * mu * v_rel_n * v_rel_n;
+
+              console.log(collisionKE, p1.getKE(), p2.getKE(), collisionEnergyFactor, p1.type, p2.type);
+
+              for (const step of reactionSteps.filter(s => s.reactionType === 'bimolecular' && s.active)) {
+                const typeMatch = (step.reactant1 === p1.type && step.reactant2 === p2.type) || (step.reactant1 === p2.type && step.reactant2 === p1.type);
+                if (typeMatch) {
+                  if (collisionKE >= step.activationEnergy) {
+                    // console.log(step.probability, Math.random())
+                    if (Math.random() < step.probability) {
+                      reactionOccurred = true;
+                      particlesToRemove.add(i); particlesToRemove.add(j);
+                      p1.reactedThisFrame = true; p2.reactedThisFrame = true;
+                      const { v1x_f, v1y_f, v2x_f, v2y_f } = calculateElasticVelocities(p1, p2);
+                      const cx = (p1.x + p2.x) / 2; const cy = (p1.y + p2.y) / 2;
+                      const productVels = [{ vx: v1x_f, vy: v1y_f }, { vx: v2x_f, vy: v2y_f }];
+
+                      step.products.forEach((prod, index) => {
+                        if (prod && prod.coeff > 0 && particleTypes[prod.type]) {
+                          const prodVel = productVels[index % 2];
+                          const productProps = particleTypes[prod.type];
+                          for (let k = 0; k < prod.coeff; k++) {
+                            const offsetMag = productProps.radius * 0.1 * k; const offsetAngle = Math.random() * Math.PI * 2;
+                            particlesToAdd.push(new Particle(prod.type, cx + offsetMag * Math.cos(offsetAngle), cy + offsetMag * Math.sin(offsetAngle), prodVel.vx, prodVel.vy));
+                          }
+                        }
+                      });
+                      break; // Stop checking other steps for this pair
+                    } // End probability check
+                  } // End energy check
+                } // End type match check
+              } // End loop bimolecular steps
+            } // End approaching check
+
+            if (!reactionOccurred) {
+              resolveCollision(p1, p2);
+            } else {
+              break; // p2 is handled (reacted), break inner loop for p1
+            }
+          } // End collision check
+        } // End inner loop j
+      } // End outer loop i
+
+
+      // --- 3. Unimolecular Decomposition Loop ---
+      const currentParticleCount = particles.length; // Store count before potential removals affect loop
+      for (let k = 0; k < currentParticleCount; k++) {
+        if (particlesToRemove.has(k)) continue;
+        const p = particles[k];
+        // Check if p exists, might have been removed in previous iteration if indices shifted, though Set should handle this. Redundant check for safety.
+        if (!p || p.reactedThisFrame || p.decomposedThisFrame) continue;
+
+        for (const step of reactionSteps.filter(s => s.reactionType === 'unimolecular' && s.active)) {
+          if (p.type === step.reactant1) {
+            const pKE = p.getKE();
+            if ((pKE * collisionEnergyFactor) >= step.activationEnergy) {
+              if (Math.random() < step.probability) {
+                particlesToRemove.add(k);
+                p.decomposedThisFrame = true; // Mark to prevent re-processing if array shifts
+
+                const parentMomentumX = p.mass * p.vx; const parentMomentumY = p.mass * p.vy;
+                let totalProductMass = 0; let validProducts = [];
+                step.products.forEach(prod => { if (prod && prod.coeff > 0 && particleTypes[prod.type]) { totalProductMass += prod.coeff * particleTypes[prod.type].mass; validProducts.push(prod); } });
+
+                if (totalProductMass > 1e-9) {
+                  const avgProdVX = parentMomentumX / totalProductMass;
+                  const avgProdVY = parentMomentumY / totalProductMass;
+
+                  validProducts.forEach(prod => {
+                    const productProps = particleTypes[prod.type];
+                    for (let n = 0; n < prod.coeff; n++) {
+                      const flyApartSpeed = 0.5 + Math.random() * 0.5; // Small outward push
+                      const flyAngle = Math.random() * Math.PI * 2;
+                      const flyVX = Math.cos(flyAngle) * flyApartSpeed; const flyVY = Math.sin(flyAngle) * flyApartSpeed;
+                      const offsetMag = productProps.radius * 0.2 * n; const offsetAngle = flyAngle;
+                      particlesToAdd.push(new Particle(prod.type, p.x + offsetMag * Math.cos(offsetAngle), p.y + offsetMag * Math.sin(offsetAngle), avgProdVX + flyVX, avgProdVY + flyVY));
+                    }
+                  });
+                }
+                break; // Stop checking other decomp steps for this particle
+              } // End probability check
+            } // End energy check
+          } // End type match check
+        } // End loop unimolecular steps
+      } // End loop particles for decomposition
+
+
+      // --- 4. Update Particle Array ---
+      if (particlesToRemove.size > 0) {
+        // Filter out particles by creating a new array (safer than splice with shifting indices)
+        const newParticles = [];
+        for (let i = 0; i < particles.length; i++) {
+          if (!particlesToRemove.has(i)) {
+            newParticles.push(particles[i]);
+          }
+        }
+        particles = newParticles;
+        particles.push(...particlesToAdd); // Add new particles
+      }
+
+
+      // --- 5. Draw, Graph, Status ---
+      enforceKE();
+
+      simCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
+      particles.forEach(particle => particle.draw());
+      updateStatusDisplay();
+      if (timeSinceLastGraphUpdate >= graphUpdateInterval) { logData(); updateGraph(); timeSinceLastGraphUpdate = 0; }
+
+      animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+
+    // --- Data Logging & Graphing (Includes D) ---
+    function logData() { const counts = { A: 0, B: 0, C: 0, D: 0 }; particles.forEach(p => { if (counts[p.type] !== undefined) counts[p.type]++; }); timeData.push(simulationTime.toFixed(1)); countAData.push(counts.A); countBData.push(counts.B); countCData.push(counts.C); countDData.push(counts.D); const maxDataPoints = 500; if (timeData.length > maxDataPoints) { timeData.shift(); countAData.shift(); countBData.shift(); countCData.shift(); countDData.shift(); } }
+    function initGraph() { if (reactionChart) { reactionChart.destroy(); } const datasets = [{ label: 'A', data: [], borderColor: particleTypes.A.color, backgroundColor: hexToRgba(particleTypes.A.color, 0.1), borderWidth: 2, tension: 0.1, pointRadius: 0 }, { label: 'B', data: [], borderColor: particleTypes.B.color, backgroundColor: hexToRgba(particleTypes.B.color, 0.1), borderWidth: 2, tension: 0.1, pointRadius: 0 }, { label: 'C', data: [], borderColor: particleTypes.C.color, backgroundColor: hexToRgba(particleTypes.C.color, 0.1), borderWidth: 2, tension: 0.1, pointRadius: 0 }, { label: 'D', data: [], borderColor: particleTypes.D.color, backgroundColor: hexToRgba(particleTypes.D.color, 0.1), borderWidth: 2, tension: 0.1, pointRadius: 0 }]; reactionChart = new Chart(chartCtx, { type: 'line', data: { labels: [], datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { title: { display: true, text: 'Time (s)' }, ticks: { autoSkip: true, maxTicksLimit: 10 } }, y: { title: { display: true, text: 'Number of Particles' }, beginAtZero: true } }, plugins: { legend: { position: 'top' }, title: { display: false } } } }); }
+    function updateGraph() { if (!reactionChart) return; reactionChart.data.labels = timeData; reactionChart.data.datasets[0].data = countAData; reactionChart.data.datasets[1].data = countBData; reactionChart.data.datasets[2].data = countCData; reactionChart.data.datasets[3].data = countDData; if (reactionChart.data.datasets[3]) { reactionChart.data.datasets[3].borderColor = particleTypes.D.color; reactionChart.data.datasets[3].backgroundColor = hexToRgba(particleTypes.D.color, 0.1); } reactionChart.update('none'); }
+    function updateStatusDisplay() { const counts = { A: 0, B: 0, C: 0, D: 0 }; particles.forEach(p => { if (counts[p.type] !== undefined) counts[p.type]++; }); const statusText = simulationRunning ? 'Running' : 'Idle'; const stepCount = reactionSteps.length; const avgKE = calculateAverageKE(); avgKETempDisplay.textContent = `Temperature: ${avgKE.toFixed(2)}`; statusDiv.innerHTML = `Status: ${statusText} | Steps: ${stepCount} | A: ${counts.A} | B: ${counts.B} | C: ${counts.C} | D: ${counts.D} | Time: ${simulationTime.toFixed(1)}s`; }
+
+
+    // --- Initialization and Controls ---
+    function initSimulation() {
+      console.log("Initializing simulation...");
+      updateParticleProperties();
+      simulationRunning = false;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      const initialA = parseInt(initialAInput.value) || 0;
+      const initialB = parseInt(initialBInput.value) || 0;
+      const initialC = parseInt(initialCInput.value) || 0;
+      const initialD = parseInt(initialDInput.value) || 0;
+      simCanvas.width = simContainerInner.clientWidth;
+      simCanvas.height = simContainerInner.clientHeight;
+      particles = [];
+      simulationTime = 0;
+      timeSinceLastGraphUpdate = 0;
+      lastFrameTime = performance.now();
+      timeData = [];
+      countAData = [];
+      countBData = [];
+      countCData = [];
+      countDData = [];
+      let attempts = 0;
+      const maxAttempts = (initialA + initialB + initialC + initialD) * 5;
+
+      function trySpawn(type, count) {
+        for (let k = 0; k < count; k++) {
+          let placed = false;
+          let spawnAttempts = 0;
+          while (spawnAttempts < 50 && !placed && attempts < maxAttempts) {
+            attempts++;
+            spawnAttempts++;
+            const props = particleTypes[type];
+            if (!props) continue;
+            const radius = props.radius;
+            const x = getRandom(radius, simCanvas.width - radius);
+            const y = getRandom(radius, simCanvas.height - radius);
+            let overlap = false;
+            for (const p of particles) {
+              const dx = p.x - x;
+              const dy = p.y - y;
+              const distSq = dx * dx + dy * dy;
+              if (distSq < (p.radius + radius) * (p.radius + radius) * 1.1) {
+                overlap = true;
+                break;
+              }
+            }
+            if (!overlap) {
+              particles.push(new Particle(type, x, y));
+              placed = true;
+            }
+          }
+          if (!placed && attempts < maxAttempts) {
+            particles.push(new Particle(type));
+            attempts++;
+          }
+        }
+      }
+      trySpawn('A', initialA);
+      trySpawn('B', initialB);
+      trySpawn('C', initialC);
+      trySpawn('D', initialD);
+      console.log(`Spawned ${initialA} A, ${initialB} B, ${initialC} C, ${initialD} D`);
+      // — THERMOSTAT SETPOINT —
+      targetAvgKE = 298.15 // calculateAverageKE();
+      initGraph();
+      logData();
+      updateGraph();
+      updateStatusDisplay();
+      simulationRunning = true;
+      updateStatusDisplay();
+      animationFrameId = requestAnimationFrame(gameLoop);
+    }
+    // --- Event Listeners ---
+    startBtn.addEventListener('click', initSimulation);
+    addStepBtn.addEventListener('click', addReactionStep);
+    addHeatBtn.addEventListener('click', () => {
+      targetAvgKE *= (1 + HEAT_ADJUST_FACTOR);
+    });
+    removeHeatBtn.addEventListener('click', () => {
+      targetAvgKE /= (1 + HEAT_ADJUST_FACTOR);
+    });
+
+    // 1. Grab the new controls
+    const prtAction = document.getElementById('prtAction');
+    const prtType = document.getElementById('prtType');
+    const prtCount = document.getElementById('prtCount');
+    const prtApplyBtn = document.getElementById('prtApplyBtn');
+
+    // 2. Functions to add/remove particles
+    function addParticles(type, count) {
+      for (let i = 0; i < count; i++) {
+        particles.push(new Particle(type));
+      }
+    }
+
+    function removeParticles(type, count) {
+      let removed = 0;
+      // walk backwards so indices stay valid
+      for (let i = particles.length - 1; i >= 0 && removed < count; i--) {
+        if (particles[i].type === type) {
+          particles.splice(i, 1);
+          removed++;
+        }
+      }
+    }
+
+    // 3. Handle the Apply button
+    prtApplyBtn.addEventListener('click', () => {
+      const action = prtAction.value;           // "add" or "remove"
+      const type = prtType.value;             // "A","B","C","D"
+      const count = parseInt(prtCount.value) || 0;
+
+      if (count <= 0) return;
+      if (action === 'add') {
+        addParticles(type, count);
+      } else {
+        removeParticles(type, count);
+      }
+
+      // update status + graph immediately
+      updateStatusDisplay();
+      logData();
+      updateGraph();
+    });
+
+    document.getElementById('increaseVolBtn').addEventListener('click', () => {
+      changeVolume(VOL_STEP);
+    });
+
+    document.getElementById('decreaseVolBtn').addEventListener('click', () => {
+      changeVolume(-VOL_STEP);
+    });
+
+
+
+    // energyFactorSlider.addEventListener('input', (e) => {
+    //   collisionEnergyFactor = parseFloat(e.target.value);
+    //   energyFactorValue.textContent = `${collisionEnergyFactor.toFixed(1)}x`;
+    // });
+    colorAInput.addEventListener('input', updateParticleProperties);
+    radiusAInput.addEventListener('change', updateParticleProperties);
+    colorBInput.addEventListener('input', updateParticleProperties);
+    radiusBInput.addEventListener('change', updateParticleProperties);
+    colorCInput.addEventListener('input', updateParticleProperties);
+    radiusCInput.addEventListener('change', updateParticleProperties);
+    colorDInput.addEventListener('input', updateParticleProperties);
+    radiusDInput.addEventListener('change', updateParticleProperties);
+
+    // --- Initial Setup ---
+    window.addEventListener('load', () => {
+      // energyFactorValue.textContent = `${parseFloat(energyFactorSlider.value).toFixed(1)}x`;
+      // collisionEnergyFactor = parseFloat(energyFactorSlider.value);
+      updateParticleProperties();
+      if (reactionSteps.length === 0) {
+        // Add first reaction step: Bimolecular, 60%, Ea: 50, A+B->C
+        const step1 = {
+          id: Date.now(),
+          active: true,
+          reactionType: 'bimolecular',
+          reactant1: 'A',
+          reactant2: 'B',
+          products: [{
+            type: 'C',
+            coeff: 1
+          }, {
+            type: 'D',
+            coeff: 0
+          }],
+          activationEnergy: 50,
+          probability: 0.60
+        };
+        reactionSteps.push(step1);
+        
+        // Add second reaction step: Unimolecular, 15%, Ea: 600, C-> 1 A + 1 B
+        const step2 = {
+          id: Date.now() + 1,
+          active: true,
+          reactionType: 'unimolecular',
+          reactant1: 'C',
+          reactant2: '',
+          products: [{
+            type: 'A',
+            coeff: 1
+          }, {
+            type: 'B',
+            coeff: 1
+          }],
+          activationEnergy: 400,
+          probability: 0.15
+        };
+        reactionSteps.push(step2);
+        
+        renderReactionStepsUI();
+      } else {
+        renderReactionStepsUI();
+      }
+      
+      // Set initial fixed dimensions for simulation container
+      // simContainer.style.width = '400px';
+      // simContainer.style.height = '400px';
+      
+      simCanvas.width = simContainerInner.clientWidth;
+      simCanvas.height = simContainerInner.clientHeight;
+      initGraph();
+      updateStatusDisplay();
+    });
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        console.log("Window resized - Restart simulation required.");
+        simulationRunning = false;
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        statusDiv.innerHTML = `Status: Idle (Resize Detected - Press Start/Restart) | Steps: ${reactionSteps.length} | A: - | B: - | C: - | D: - | Time: -`;
+        avgKETempDisplay.textContent = `Avg KE: -`;
+      }, 500);
+    });
+  </script>
+
+  <!-- Explanation Section -->
+  <div style="max-width: 1000px; margin-top: 30px; margin-bottom: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+    <h3 style="margin-top: 0; color: #333; ">About this simulation</h3>
+    <p style="margin-bottom: 15px; line-height: 1.6;">
+      <strong>Kinetics:</strong> From Chem 102, we know that for a successful collision:
+      <ul>
+        <li>The particles must collide in the correct orientation</li>
+        <li>The particles must collide with enough energy to overcome the activation energy</li>
+      </ul>
+      In this simulation, this is represented in each elementary reaction step by the probability of a successful collision (pre-exponential factor) and the activation energy.
+      In order for a collision to be successful, the particles must collide with enough combined energy, and the pre-exponential factor (the probability) must be met.
+    </p>
+    <p style="margin-bottom: 15px; line-height: 1.6;">
+      <strong>Le Chatelier's Principle:</strong> From these two simple rules, the phenomenon of Le Chatelier's Principle emerges.
+ When you change conditions (temperature, volume, or concentration), the system shifts to counteract the change. For example, increasing temperature (faster particles) favors the endothermic reaction, while decreasing volume increases collision frequency and pushes the reaction to the side with less particles.
+    </p>
+   
+  </div>
+
+</body>
+
+</html>
